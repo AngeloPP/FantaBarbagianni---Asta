@@ -1,0 +1,120 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Asta Fantacalcio</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    #partecipanti, #asta { margin-top: 20px; }
+    input, button { margin: 5px; padding: 5px; }
+  </style>
+</head>
+<body>
+  <h1>Asta Fantacalcio</h1>
+  
+  <div id="login">
+    <input type="text" id="nome" placeholder="Inserisci il tuo nome">
+    <button onclick="entra()">Entra</button>
+    <p id="loginError" style="color:red;"></p>
+  </div>
+
+  <div id="partecipanti" style="display:none;">
+    <h2>Partecipanti</h2>
+    <ul id="listaPartecipanti"></ul>
+  </div>
+
+  <div id="asta" style="display:none;">
+    <h2>Asta in corso</h2>
+    <input type="text" id="giocatore" placeholder="Nome giocatore">
+    <button onclick="avviaAsta()">Avvia Asta</button>
+    <p id="giocatoreCorrente"></p>
+    <input type="number" id="offerta" placeholder="La tua offerta">
+    <button onclick="faiOfferta()">Fai offerta</button>
+    <p id="offertaCorrente"></p>
+  </div>
+
+  <script>
+    // Configurazione Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyDoW-B08tYEdAk-ajr6pebJvs7CejkB-qY",
+      authDomain: "fantabarbagianni---asta.firebaseapp.com",
+      databaseURL: "https://fantabarbagianni---asta-default-rtdb.europe-west1.firebasedatabase.app/",
+      projectId: "fantabarbagianni---asta",
+      storageBucket: "fantabarbagianni---asta.firebasestorage.app",
+      messagingSenderId: "11858821392",
+      appId: "1:11858821392:web:89f9d1aca2d1618808a595",
+      measurementId: "G-1QXXVK09KQ"
+    };
+
+    // Inizializza Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let nomeUtente = "";
+
+    function entra() {
+      nomeUtente = document.getElementById("nome").value.trim();
+      if (!nomeUtente) {
+        document.getElementById("loginError").innerText = "Inserisci un nome valido!";
+        return;
+      }
+      document.getElementById("loginError").innerText = "";
+      document.getElementById("login").style.display = "none";
+      document.getElementById("partecipanti").style.display = "block";
+      document.getElementById("asta").style.display = "block";
+
+      // Aggiungi partecipante
+      db.ref("partecipanti/" + nomeUtente).set(true);
+
+      // Aggiorna lista partecipanti in tempo reale
+      db.ref("partecipanti").on("value", snapshot => {
+        const lista = document.getElementById("listaPartecipanti");
+        lista.innerHTML = "";
+        snapshot.forEach(child => {
+          const li = document.createElement("li");
+          li.innerText = child.key;
+          lista.appendChild(li);
+        });
+      });
+
+      // Ascolta aggiornamenti asta
+      db.ref("asta").on("value", snapshot => {
+        const data = snapshot.val();
+        if (data) {
+          document.getElementById("giocatoreCorrente").innerText = "Giocatore: " + (data.giocatore || "");
+          document.getElementById("offertaCorrente").innerText = "Offerta attuale: " + (data.offerta || 0) + " da " + (data.utente || "");
+        }
+      });
+    }
+
+    function avviaAsta() {
+      const giocatore = document.getElementById("giocatore").value.trim();
+      if (!giocatore) return;
+      db.ref("asta").set({
+        giocatore: giocatore,
+        offerta: 0,
+        utente: ""
+      });
+    }
+
+    function faiOfferta() {
+      const offerta = parseInt(document.getElementById("offerta").value);
+      if (isNaN(offerta)) return;
+      db.ref("asta/offerta").once("value").then(snapshot => {
+        const offertaAttuale = snapshot.val() || 0;
+        if (offerta > offertaAttuale) {
+          db.ref("asta").update({
+            offerta: offerta,
+            utente: nomeUtente
+          });
+        } else {
+          alert("L'offerta deve essere superiore a quella attuale!");
+        }
+      });
+    }
+  </script>
+</body>
+</html>
