@@ -1,0 +1,305 @@
+
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Asta FantaBarbagianni 2025-2026</title>
+  <style>
+    body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;padding:12px}
+    .container{max-width:700px;margin:0 auto;background:rgba(255,255,255,.96);border-radius:18px;box-shadow:0 20px 40px rgba(0,0,0,.12);overflow:hidden}
+    .header{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;text-align:center;padding:22px}
+    .header h1{margin:0}
+    .content{padding:20px}
+    .section{background:linear-gradient(135deg,#f8f9fa,#eef1f5);border-radius:14px;padding:16px;margin:14px 0;border:1px solid rgba(0,0,0,.06)}
+    .row{display:grid;grid-template-columns:1fr auto;gap:12px}
+    .input{width:100%;padding:14px;border:2px solid #e1e8ed;border-radius:12px;font-size:16px;background:#fff}
+    .btn{border:none;border-radius:12px;padding:14px 20px;font-weight:700;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.12);transition:.2s}
+    .btn-primary{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
+    .btn-bid{background:linear-gradient(135deg,#dc3545,#c82333);color:#fff}
+    .btn-stop{background:linear-gradient(135deg,#b00020,#7a0015);color:#fff}
+    .btn-resume{background:linear-gradient(135deg,#28a745,#15803d);color:#fff}
+    .chips{display:flex;flex-wrap:wrap;gap:8px}
+    .chip{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:6px 10px;border-radius:9999px;font-size:12px}
+    .dropdown{position:relative}
+    .suggestions{position:absolute;z-index:10;left:0;right:0;background:#fff;border:1px solid #e1e8ed;border-radius:10px;max-height:220px;overflow:auto;box-shadow:0 12px 24px rgba(0,0,0,.12);display:none}
+    .suggestion{padding:10px 12px;cursor:pointer;border-bottom:1px solid #f3f4f6}
+    .suggestion:hover{background:linear-gradient(135deg,#f0f7ff,#e6f0ff)}
+    .auction-card{border:3px solid #28a745;border-radius:16px;padding:16px;background:linear-gradient(135deg,#d4edda,#c3e6cb);position:relative}
+    .timer{position:absolute;right:12px;top:12px;background:#dc3545;color:#fff;border-radius:9999px;padding:6px 12px;font-weight:800}
+    .timer.warn{background:#ffc107;color:#212529}
+    .timer.paused{background:#6c757d}
+    .history{max-height:240px;overflow:auto}
+    .bid-item{background:#fff;border-left:4px solid #667eea;border-radius:10px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;margin:8px 0}
+    .small{font-size:12px;color:#6c757d}
+    .err{color:#b00020;font-weight:700;margin-top:8px}
+    .result{background:linear-gradient(135deg,#fff3cd,#ffeeba);border:2px dashed #ffc107;color:#7a5a00;border-radius:12px;padding:14px;margin-bottom:10px;font-weight:700}
+    .controls{display:flex; gap:10px; flex-wrap:wrap}
+    .controls .btn[disabled]{opacity:.6; cursor:not-allowed}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🏆 Asta FantaBarbagianni 2025-2026</h1>
+      <div id="status" class="small"></div>
+    </div>
+    <div class="content">
+      <div class="section" id="loginSection">
+        <h3>🚀 Entra nell'asta</h3>
+        <div class="row" style="grid-template-columns:1fr auto">
+          <input id="playerName" class="input" placeholder="Il tuo nome"/>
+          <button class="btn btn-primary" onclick="joinAuction()">Entra</button>
+        </div>
+        <div id="loginError" class="err"></div>
+      </div>
+
+      <div id="app" style="display:none">
+        <div class="section">
+          <h3>👥 Partecipanti</h3>
+          <div class="chips" id="participantsList"></div>
+        </div>
+
+        <!-- SEZIONE RISULTATO (visibile dopo chiusura) -->
+        <div class="section" id="resultSection" style="display:none">
+          <div id="resultBox" class="result"></div>
+        </div>
+
+        <div class="section">
+          <h3>🔍 Seleziona Giocatore per Asta</h3>
+          <div class="dropdown">
+            <input id="playerSearchInput" class="input" placeholder="Scrivi almeno 2 lettere..."/>
+            <div id="playerSuggestions" class="suggestions"></div>
+          </div>
+          <div style="margin-top:10px">
+            <button class="btn btn-primary" onclick="startAuction()">🚀 Inizia Asta</button>
+          </div>
+        </div>
+
+        <div class="section auction-card" id="currentAuctionSection" style="display:none">
+          <span class="timer" id="timer">20s</span>
+          <h3>⚡ Asta in corso</h3>
+          <div style="text-align:center;margin:12px 0">
+            <div style="font-size:18px;color:#28a745"><strong id="currentPlayerName"></strong></div>
+            <div style="font-size:16px">💰 Offerta più alta: €<strong id="currentBid">1</strong></div>
+            <div style="font-size:14px">👤 Ultimo offerente: <strong id="lastBidder">-</strong></div>
+          </div>
+          <div class="row">
+            <input id="bidAmount" type="number" min="1" class="input" placeholder="€"/>
+            <button class="btn btn-bid" onclick="placeBid()">🔥 Rilancia</button>
+          </div>
+          <div style="margin-top:10px" class="controls">
+            <button id="pauseBtn" class="btn btn-stop" onclick="pauseAuction()">🛑 Pausa</button>
+            <button id="resumeBtn" class="btn btn-resume" onclick="resumeAuction()">▶️ Riprendi</button>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>📊 Cronologia Offerte</h3>
+          <div id="bidsList" class="history"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDoW-B08tYEdAk-ajr6pebJvs7CejkB-qY",
+      authDomain: "fantabarbagianni---asta.firebaseapp.com",
+      databaseURL: "https://fantabarbagianni---asta-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "fantabarbagianni---asta",
+      storageBucket: "fantabarbagianni---asta.firebasestorage.app",
+      messagingSenderId: "11858821392",
+      appId: "1:11858821392:web:89f9d1aca2d1618808a595",
+      measurementId: "G-1QXXVK09KQ"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const $=(id)=>document.getElementById(id);
+
+    function toSafeKey(name){
+      return name.normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[.#$\[\]/]/g,'-').trim().toLowerCase().replace(/[^a-z0-9- ]+/g,'').replace(/\s+/g,'-').slice(0,60)||'utente';
+    }
+    function showLoginError(msg){ $("loginError").textContent = msg || ""; }
+
+    let currentUser=null;
+    let playersBySlug={}; // slug-> {name}
+    let nameToSlug={};    // name-> slug
+    let availableSlugs=new Set();
+    let timerInterval=null;
+
+    // ===== Login & Partecipanti =====
+    function joinAuction(){
+      showLoginError("");
+      const name=$("playerName").value.trim();
+      if(!name){ showLoginError("Inserisci un nome"); return; }
+      currentUser=name;
+      const key = toSafeKey(name);
+      db.ref("partecipanti/"+key).set(name).then(()=>{
+        $("loginSection").style.display="none";
+        $("app").style.display="block";
+      }).catch(err=> showLoginError("Errore: " + (err?.message||err)));
+    }
+
+    db.ref("partecipanti").on("value", snap=>{
+      const list=$("participantsList"); list.innerHTML="";
+      const obj=snap.val()||{};
+      Object.keys(obj).forEach(k=>{
+        const vis=(typeof obj[k]==="string"&&obj[k].trim())?obj[k]:k;
+        const d=document.createElement("div"); d.className="chip"; d.textContent=vis; list.appendChild(d);
+      });
+      $("status").textContent="Partecipanti attivi: "+Object.keys(obj).length;
+    });
+
+    // ===== Players & Sold =====
+    function rebuildAvailable(){
+      const sold=new Set(Object.keys(window._sold||{}));
+      availableSlugs=new Set(Object.keys(playersBySlug).filter(slug=>!sold.has(slug)));
+    }
+    db.ref("players").on("value", snap=>{
+      const obj=snap.val()||{}; playersBySlug=obj; nameToSlug={};
+      Object.keys(obj).forEach(slug=>{ nameToSlug[obj[slug].name]=slug; });
+      rebuildAvailable();
+    });
+    db.ref("soldPlayers").on("value", snap=>{ window._sold=snap.val()||{}; rebuildAvailable(); });
+
+    // ===== Dropdown =====
+    $("playerSearchInput").addEventListener("input", onSearch);
+    $("playerSearchInput").addEventListener("focus", onSearch);
+    document.addEventListener("click", (e)=>{
+      if(!$("playerSuggestions").contains(e.target) && e.target!==$("playerSearchInput")){
+        $("playerSuggestions").style.display="none";
+      }
+    });
+    function onSearch(){
+      const q=$("playerSearchInput").value.trim().toLowerCase();
+      const box=$("playerSuggestions"); box.innerHTML="";
+      if(q.length<2){ box.style.display="none"; return; }
+      const results=Array.from(availableSlugs).map(slug=>({slug,name:playersBySlug[slug].name})).filter(p=>p.name.toLowerCase().includes(q)).slice(0,30);
+      if(results.length===0){ box.style.display="none"; return; }
+      results.forEach(({slug,name})=>{
+        const div=document.createElement("div"); div.className="suggestion"; div.textContent=name; div.onclick=()=>{ $("playerSearchInput").value=name; box.style.display="none"; };
+        box.appendChild(div);
+      });
+      box.style.display="block";
+    }
+
+    // ===== Asta con timer 20s (pausa/riprendi manuale) =====
+    function startAuction(){
+      const name=$("playerSearchInput").value.trim();
+      const slug=nameToSlug[name];
+      if(!slug || !availableSlugs.has(slug)){ $("status").textContent="Scegli dal menù un giocatore disponibile"; return; }
+      // Pulizia risultato precedente e cronologia offerte
+      db.ref("lastResult").set(null);
+      db.ref("bidsHistory").set(null);
+      $("resultSection").style.display="none";
+      $("bidsList").innerHTML="";
+      // Avvio
+      db.ref("asta").set({ giocatore:name, slug:slug, offerta:1, utente:"-", endsAt: Date.now()+20000, status:"open", paused:false, pauseRemaining:null });
+      $("playerSearchInput").value="";
+    }
+
+    function writeResultAndCleanup(a){
+      const result = { giocatore:a.giocatore, slug:a.slug, offerta:a.offerta||1, utente:a.utente||"-", ts: firebase.database.ServerValue.TIMESTAMP };
+      db.ref("cronologiaAste").push(result);
+      db.ref("soldPlayers/"+a.slug).set(true);
+      db.ref("lastResult").set(result);
+      db.ref("asta").set(null);
+    }
+
+    function pauseAuction(){
+      db.ref("asta").transaction(a=>{
+        if(!a) return a;
+        if(a.paused) return a;
+        const remaining = Math.max(0, (a.endsAt||Date.now()) - Date.now());
+        a.paused = true;
+        a.pauseRemaining = remaining || 20000;
+        a.endsAt = null;
+        return a;
+      });
+    }
+
+    function resumeAuction(){
+      db.ref("asta").transaction(a=>{
+        if(!a) return a;
+        if(!a.paused) return a;
+        const remaining = a.pauseRemaining || 20000;
+        a.paused = false;
+        a.pauseRemaining = null;
+        a.endsAt = Date.now() + remaining;
+        return a;
+      });
+    }
+
+    function startLocalTimer(a){
+      clearInterval(timerInterval);
+      timerInterval=setInterval(()=>{
+        if(a.paused){
+          $("timer").textContent="PAUSA";
+          $("timer").className="timer paused";
+          return;
+        }
+        const ms=Math.max(0, (a.endsAt||Date.now()) - Date.now());
+        const s=Math.ceil(ms/1000);
+        $("timer").textContent=s+"s";
+        $("timer").className="timer"+(s<=5?" warn":"");
+        if(ms<=0){
+          clearInterval(timerInterval);
+          db.ref("asta/status").transaction(v=>{ if(v==='closed') return; return 'closed'; }).then(r=>{
+            if(r.committed){ db.ref("asta").once("value").then(snap=>{ const a2=snap.val(); if(a2) writeResultAndCleanup(a2); }); }
+          });
+        }
+      },200);
+    }
+
+    db.ref("asta").on("value", snap=>{
+      const a=snap.val();
+      if(!a){ $("currentAuctionSection").style.display="none"; clearInterval(timerInterval); return; }
+      $("currentAuctionSection").style.display="block";
+      $("currentPlayerName").textContent=a.giocatore||"";
+      $("currentBid").textContent=a.offerta||1;
+      $("lastBidder").textContent=a.utente||"-";
+      // aggiorna stato bottoni
+      $("pauseBtn").disabled = !!a.paused;
+      $("resumeBtn").disabled = !a.paused;
+      startLocalTimer(a);
+    });
+
+    // Reset timer a 20s su OGNI nuova offerta
+    function placeBid(){
+      const val=parseInt($("bidAmount").value,10);
+      if(!val||val<=0){ $("status").textContent="Inserisci un importo valido"; return; }
+      db.ref("asta").transaction(a=>{
+        if(!a) return a;
+        if(val <= (a.offerta||1)) return a;
+        return Object.assign({}, a, { offerta: val, utente: currentUser, paused:false, pauseRemaining:null, endsAt: Date.now()+20000 });
+      });
+      db.ref("bidsHistory").push({ bid: val, bidder: currentUser, ts: firebase.database.ServerValue.TIMESTAMP });
+      $("bidAmount").value="";
+    }
+
+    // Cronologia offerte: ricostruzione completa a ogni cambiamento (così si svuota con set(null))
+    db.ref("bidsHistory").on("value", snap=>{
+      const list=$("bidsList"); list.innerHTML="";
+      const obj=snap.val()||{};
+      const rows=Object.values(obj).sort((a,b)=>(a.ts||0)-(b.ts||0)); // in ordine crescente
+      rows.forEach(b=>{
+        const t=new Date(b.ts||Date.now()).toLocaleTimeString();
+        const div=document.createElement("div"); div.className="bid-item";
+        div.innerHTML = `<span>€${b.bid} da ${b.bidder}</span><small>${t}</small>`;
+        list.appendChild(div);
+      });
+    });
+
+    // Sezione esito
+    db.ref("lastResult").on("value", snap=>{
+      const r=snap.val();
+      if(!r){ $("resultSection").style.display="none"; $("resultBox").textContent=""; return; }
+      $("resultBox").textContent = `🎯 ${r.giocatore} assegnato a ${r.utente} per €${r.offerta}`;
+      $("resultSection").style.display="block";
+    });
+  </script>
+</body>
+</html>
