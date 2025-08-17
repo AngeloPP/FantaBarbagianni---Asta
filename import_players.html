@@ -1,0 +1,49 @@
+
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Importa Giocatori in Firebase</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; }
+    button { padding: 10px 16px; border: none; background: #4f46e5; color: #fff; border-radius: 8px; cursor: pointer; }
+    pre { background:#f6f8fa; padding:12px; border-radius:8px; max-height:240px; overflow:auto; }
+  </style>
+</head>
+<body>
+  <h1>Importa Giocatori ➜ Firebase</h1>
+  <p>Questa pagina inserisce la lista dei giocatori sotto il nodo <code>/players</code> nel tuo Realtime Database.</p>
+  <button onclick="importa()">Importa ora</button>
+  <p id="esito"></p>
+  <h3>Anteprima (prime 50):</h3>
+  <pre id="preview"></pre>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDoW-B08tYEdAk-ajr6pebJvs7CejkB-qY",
+      authDomain: "fantabarbagianni---asta.firebaseapp.com",
+      databaseURL: "https://fantabarbagianni---asta-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "fantabarbagianni---asta",
+      storageBucket: "fantabarbagianni---asta.firebasestorage.app",
+      messagingSenderId: "11858821392",
+      appId: "1:11858821392:web:89f9d1aca2d1618808a595",
+      measurementId: "G-1QXXVK09KQ"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const players = ["Aboukhlal", "Acerbi", "Adams C.", "Addai", "Adopo", "Adzic", "Aebischer", "Ahanor", "Akinsanmiro", "Alli", "Almqvist", "Alvarez A.", "Angelino", "Angori", "Anjorin", "Arena", "Asllani", "Athekame", "Atta", "Audero", "Azon", "Baldanzi", "Balogh", "Banda", "Barbieri", "Barella", "Bartesaghi", "Baschirotto", "Basic", "Bastoni", "Baturina", "Bayo V.", "Belahyane", "Bellanova", "Beltran L.", "Benedyczak", "Berardi", "Berisha M.", "Bernabè", "Bernardeschi", "Bernede", "Bertola", "Beukema", "Bianchetti", "Bianco", "Biraghi", "Bisseck", "Boloca", "Bonazzoli", "Bondo", "Bonfanti", "Bonfanti N.", "Bonny", "Borrelli", "Bradaric", "Bravo", "Bremer", "Brenner", "Brescianini", "Buffon L.", "Buongiorno", "Butez", "Cabal", "Calabresi", "Calhanoglu", "Camarda", "Cambiaghi", "Cambiaso", "Cancellieri", "Candè", "Canestrelli", "Caprile", "Caqueret", "Caracciolo A.", "Carboni V.", "Carlos Augusto", "Carnesecchi", "Casadei", "Casale", "Castagnetti", "Castellanos", "Castro S.", "Cataldi", "Ceccherini", "Celik", "Chukwueze", "Ciocci", "Circati", "Coco", "Collocolo", "Colombo", "Comuzzo", "Conceicao", "Contini", "Coppola F.", "Corvi", "Coulibaly L.", "Cristante", "Cuadrado", "Cutrone", "Da Cunha", "Dallinga", "Darmian", "David", "Davis K.", "De Bruyne", "De Gea", "De Ketelaere", "De Luca", "De Roon", "De Silvestri", "De Vrij", "De Winter", "Deiola", "Dele-Bashiru", "Delprato", "Dembelè A.", "Denoon", "Di Gennaro", "Di Gregorio", "Di Lorenzo", "Di Pardo", "Dia", "Diao", "Dimarco", "Djimsiti", "Djuric", "Dodò", "Doig", "Dominguez B.", "Dossena", "Douglas Luiz", "Douvikas", "Dovbyk", "Dumfries", "Dybala", "Dzeko", "Ebosse", "Ederson D.S.", "Ehizibue", "Ekhator", "Ekkelenkamp", "Ekuban", "El Aynaoui", "El Shaarawy", "Ellertsson", "Engelhardt", "Esposito F.P.", "Esposito Se.", "Esteves T.", "Estevez", "Estupinan", "Fabbian", "Fadera", "Fagioli", "Falcone", "Fazzini", "Felici", "Ferguson", "Ferguson E.", "Floriani Mussolini", "Fofana Y.", "Folino", "Folorunsho", "Fortini", "Frattesi", "Frendrup", "Frese", "Freuler", "Frigan", "Fruchtl", "Furlanetto", "Gabbia", "Gabrielloni", "Gaetano", "Gallo", "Gaspar K.", "Gatti", "Ghilardi", "Ghion", "Gigot", "Gila", "Gilmour", "Gimenez", "Gineitis", "Giovane", "Godfrey", "Goglichidze", "Goldaniga", "Gollini", "Gonzalez N.", "Gosens", "Grassi", "Gronbaek", "Gudmundsson A.", "Guendouzi", "Harroui", "Heggem", "Helgason", "Hermoso", "Hernani", "Hien", "Hojholt", "Holm", "Hysaj", "Iannoni", "Idrissi R.", "Idzes", "Ilic", "Ilic M.", "Immobile", "Isaksen", "Ismajli", "Israel", "Jack", "Jashari", "Jean", "Jimenez A.", "Joao Mario", "Johnsen", "Juan Jesus", "Kaba", "Kabasele", "Kalulu", "Kamara H.", "Karlsson", "Karlstrom", "Kastanos", "Kean", "Keita M.", "Kelly L.", "Kempf", "Kilicsoy", "Kolasinac", "Konè I.", "Konè M.", "Koopmeiners", "Kossounou", "Kostic", "Kouassi", "Kristensen T.", "Krstovic", "Kuhn", "Kumbulla", "Lang", "Laurientè", "Lazaro", "Lazzari", "Leali", "Leao", "Leris", "Lezzerini", "Lind", "Lipani", "Liteta", "Lobotka", "Locatelli", "Loftus-Cheek", "Lookman", "Lovik", "Lovric", "Lucca", "Lucumì", "Luis Henrique", "Lukaku", "Luperto", "Luvumbo", "Lykogiannis", "Maignan", "Maldini", "Maleh", "Malinovskyi", "Mancini", "Mandas", "Mandragora", "Marcandalli", "Marchwinski", "Marianucci", "Marin M.", "Maripan", "Martin", "Martinelli T.", "Martinez Jo.", "Martinez L.", "Marusic", "Marì", "Masina", "Masini", "Mateus Lusuardi", "Mazzitelli", "Mazzocchi", "Mbambi", "McKennie", "McTominay", "Meister", "Meret", "Messias", "Milik", "Milinkovic-Savic V.", "Miller L.", "Mina", "Miranda J.", "Miretti", "Missori", "Mkhitaryan", "Modric", "Montipò", "Morata", "Moreno Alb.", "Moreo", "Moro L.", "Moro N.", "Mosquera", "Muharemovic", "Mulattieri", "Muric", "Musah", "N'Dicka", "N'Dri", "Nasti", "Nava", "Ndaba", "Ndiaye", "Ndour", "Neres", "Ngonge", "Niasse", "Nicolas", "Njie", "Norton-Cuffy", "Noslin", "Nunziante", "Nzola", "Obert", "Odenthal", "Odgaard", "Okafor", "Okereke", "Okoye", "Olivera", "Ondrejka", "Ordonez C.", "Orsolini", "Ostigard", "Otoa", "Oyegoke", "Padelli", "Pafundi", "Paleari", "Palestra", "Palma", "Parisi", "Pasalic", "Patric", "Pavard", "Pavlovic", "Pavoletti", "Payero", "Paz N.", "Paz Y.", "Pedersen", "Pedro", "Pellegrini Lo.", "Pellegrini Lu.", "Pellegrino M.", "Perez M.", "Perilli", "Perin", "Perrone", "Pessina Mas.", "Pezzella Giu.", "Piccinini G.", "Piccoli", "Pickel", "Pieragnolo", "Pierini", "Pierotti", "Pierret", "Pinamonti", "Pinsoglio", "Piotrowski", "Pisilli", "Pizarro", "Pobega", "Politano", "Pongracic", "Popa", "Posch", "Prati", "Provedel", "Provstgaard", "Pulisic", "Radunovic", "Rafia", "Ramadani", "Ramon", "Ranieri L.", "Ravaglia F.", "Rensch", "Ricci S.", "Richardson", "Rinaldi", "Rocha Livramento", "Rodriguez Je.", "Rog", "Romagna", "Romagnoli", "Rossi F.", "Rouhi", "Rovella", "Rrahmani", "Rugani", "Rui Modesto", "Rus", "Russo A.", "Sabelli", "Sabiri", "Saelemaekers", "Salah-Eddine", "Samardzic", "Samooja", "Sanabria", "Sanchez", "Santiago", "Sarr A.", "Satalino", "Sava", "Savona", "Scalvini", "Scamacca", "Schuurs", "Scuffet", "Semper", "Serdar", "Sergi Roberto", "Sernicola", "Siegrist", "Silvestri", "Simeone", "Skjellerup", "Skorupski", "Slotsager", "Smolcic I.", "Sohm", "Solet", "Sommariva", "Sommer", "Sorensen O.", "Sottil", "Soulè", "Spinazzola", "Sportiello", "Stanciu", "Sucic P.", "Sulemana I.", "Sulemana K.", "Suslov", "Suzuki", "Svilar", "Tameze", "Taremi", "Tavares N.", "Tchatchoua", "Terracciano", "Terracciano F.", "Tete Morente", "Thorsby", "Thorstvedt", "Thuram", "Thuram K.", "Tiago Gabriel", "Tomori", "Torriani", "Tourè E.", "Tourè I.", "Tramoni M.", "Turati", "Unai Nunez", "Valenti", "Valentini N.", "Valeri", "Valle", "Valoti", "Van Der Brempt", "Vandeputte", "Vasquez", "Vasquez D.", "Vazquez", "Vecino", "Veiga D.", "Venturino", "Veroli", "Vigorito", "Viti", "Vitik", "Vitinha O.", "Vlahovic", "Vlasic", "Vogliacco", "Vojvoda", "Volpato", "Vural", "Walukiewicz", "Wesley", "Yildiz", "Zaccagni", "Zalewski", "Zambo Anguissa", "Zanoli", "Zapata D.", "Zappa", "Zappacosta", "Zarraga", "Zelezny", "Zemura", "Zerbin", "Zielinski", "Zortea"];
+
+    document.getElementById('preview').textContent = players.slice(0,50).join("\n");
+
+    async function importa() {
+      const updates = {}
+      players.forEach(p => updates[p] = true);
+      await db.ref('players').set(updates);
+      document.getElementById('esito').textContent = "Import completato: " + players.length + " giocatori caricati.";
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,225 @@
+
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Asta Fantacalcio Pro</title>
+  <style>
+    body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;padding:12px}
+    .container{max-width:700px;margin:0 auto;background:rgba(255,255,255,.96);border-radius:18px;box-shadow:0 20px 40px rgba(0,0,0,.12);overflow:hidden}
+    .header{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;text-align:center;padding:22px}
+    .content{padding:20px}
+    .section{background:linear-gradient(135deg,#f8f9fa,#eef1f5);border-radius:14px;padding:16px;margin:14px 0;border:1px solid rgba(0,0,0,.06)}
+    .row{display:grid;grid-template-columns:1fr auto;gap:12px}
+    .input{width:100%;padding:14px;border:2px solid #e1e8ed;border-radius:12px;font-size:16px;background:#fff}
+    .btn{border:none;border-radius:12px;padding:14px 20px;font-weight:700;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.12);transition:.2s}
+    .btn-primary{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
+    .btn-bid{background:linear-gradient(135deg,#dc3545,#c82333);color:#fff}
+    .chips{display:flex;flex-wrap:wrap;gap:8px}
+    .chip{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:6px 10px;border-radius:9999px;font-size:12px}
+    .dropdown{position:relative}
+    .suggestions{position:absolute;z-index:10;left:0;right:0;background:#fff;border:1px solid #e1e8ed;border-radius:10px;max-height:220px;overflow:auto;box-shadow:0 12px 24px rgba(0,0,0,.12);display:none}
+    .suggestion{padding:10px 12px;cursor:pointer;border-bottom:1px solid #f3f4f6}
+    .suggestion:hover{background:linear-gradient(135deg,#f0f7ff,#e6f0ff)}
+    .auction-card{border:3px solid #28a745;border-radius:16px;padding:16px;background:linear-gradient(135deg,#d4edda,#c3e6cb);position:relative}
+    .timer{position:absolute;right:12px;top:12px;background:#dc3545;color:#fff;border-radius:9999px;padding:6px 12px;font-weight:800}
+    .timer.warn{background:#ffc107;color:#212529}
+    .history{max-height:240px;overflow:auto}
+    .bid-item{background:#fff;border-left:4px solid #667eea;border-radius:10px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;margin:8px 0}
+    .small{font-size:12px;color:#6c757d}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🏆 Asta Fantacalcio Pro</h1>
+      <div id="status" class="small"></div>
+    </div>
+    <div class="content">
+      <div class="section" id="loginSection">
+        <h3>🚀 Entra nell'asta</h3>
+        <div class="row" style="grid-template-columns:1fr auto">
+          <input id="playerName" class="input" placeholder="Il tuo nome"/>
+          <button class="btn btn-primary" onclick="joinAuction()">Entra</button>
+        </div>
+      </div>
+
+      <div id="app" style="display:none">
+        <div class="section">
+          <h3>👥 Partecipanti</h3>
+          <div class="chips" id="participantsList"></div>
+        </div>
+
+        <div class="section">
+          <h3>🔍 Seleziona Giocatore per Asta</h3>
+          <div class="dropdown">
+            <input id="playerSearchInput" class="input" placeholder="Scrivi almeno 2 lettere..."/>
+            <div id="playerSuggestions" class="suggestions"></div>
+          </div>
+          <div class="small">Lista letto da Firebase: <code>/players</code>, esclusi i <code>/soldPlayers</code>.</div>
+          <div style="margin-top:10px">
+            <button class="btn btn-primary" onclick="startAuction()">🚀 Inizia Asta</button>
+          </div>
+        </div>
+
+        <div class="section auction-card" id="currentAuctionSection" style="display:none">
+          <span class="timer" id="timer">7s</span>
+          <h3>⚡ Asta in corso</h3>
+          <div style="text-align:center;margin:12px 0">
+            <div style="font-size:18px;color:#28a745"><strong id="currentPlayerName"></strong></div>
+            <div style="font-size:16px">💰 Offerta più alta: €<strong id="currentBid">1</strong></div>
+            <div style="font-size:14px">👤 Ultimo offerente: <strong id="lastBidder">-</strong></div>
+          </div>
+          <div class="row">
+            <input id="bidAmount" type="number" min="1" class="input" placeholder="€"/>
+            <button class="btn btn-bid" onclick="placeBid()">🔥 Rilancia</button>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>📊 Cronologia Offerte</h3>
+          <div id="bidsList" class="history"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDoW-B08tYEdAk-ajr6pebJvs7CejkB-qY",
+      authDomain: "fantabarbagianni---asta.firebaseapp.com",
+      databaseURL: "https://fantabarbagianni---asta-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "fantabarbagianni---asta",
+      storageBucket: "fantabarbagianni---asta.firebasestorage.app",
+      messagingSenderId: "11858821392",
+      appId: "1:11858821392:web:89f9d1aca2d1618808a595",
+      measurementId: "G-1QXXVK09KQ"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const $ = (id)=>document.getElementById(id);
+    let currentUser = null;
+    let availablePlayers = new Set();
+    let timerInterval = null;
+
+    function joinAuction(){
+      const name = $("playerName").value.trim();
+      if(!name) return;
+      currentUser = name;
+      db.ref("partecipanti/"+name).set(true).then(()=>{
+        $("loginSection").style.display="none";
+        $("app").style.display="block";
+      });
+    }
+
+    db.ref("partecipanti").on("value", snap=>{
+      const list = $("participantsList"); list.innerHTML="";
+      const obj = snap.val()||{};
+      Object.keys(obj).forEach(n=>{
+        const d=document.createElement("div"); d.className="chip"; d.textContent=n; list.appendChild(d);
+      });
+    });
+
+    // Carica players da Firebase
+    function refreshPlayers(){
+      Promise.all([
+        db.ref("players").once("value"),
+        db.ref("soldPlayers").once("value")
+      ]).then(([pSnap,sSnap])=>{
+        const playersObj = pSnap.val()||{};
+        const sold = new Set(Object.keys(sSnap.val()||{}));
+        const fresh = Object.keys(playersObj).filter(n=>!sold.has(n));
+        availablePlayers = new Set(fresh);
+      });
+    }
+    refreshPlayers();
+    db.ref("players").on("value", refreshPlayers);
+    db.ref("soldPlayers").on("value", refreshPlayers);
+
+    // Dropdown
+    $("playerSearchInput").addEventListener("input", onSearch);
+    $("playerSearchInput").addEventListener("focus", onSearch);
+    document.addEventListener("click", (e)=>{
+      if(!$("playerSuggestions").contains(e.target) && e.target !== $("playerSearchInput")){
+        $("playerSuggestions").style.display="none";
+      }
+    });
+    function onSearch(){
+      const q=$("playerSearchInput").value.trim().toLowerCase();
+      const box=$("playerSuggestions"); box.innerHTML="";
+      let results=[];
+      if(q.length>=2) results=Array.from(availablePlayers).filter(p=>p.toLowerCase().includes(q)).slice(0,30);
+      if(results.length===0){ box.style.display="none"; return; }
+      results.forEach(n=>{
+        const div=document.createElement("div"); div.className="suggestion"; div.textContent=n;
+        div.onclick=()=>{ $("playerSearchInput").value=n; box.style.display="none"; };
+        box.appendChild(div);
+      });
+      box.style.display="block";
+    }
+    function assertInDropdown(name){ return availablePlayers.has(name); }
+
+    // Asta + timer
+    function startAuction(){
+      const player = $("playerSearchInput").value.trim();
+      if(!assertInDropdown(player)){ $("status").textContent="Scegli dal menù a tendina un giocatore disponibile"; return; }
+      db.ref("bidsHistory").set(null);
+      db.ref("asta").set({ giocatore:player, offerta:1, utente:"-", endsAt: Date.now()+7000, status:"open" });
+      $("bidsList").innerHTML="";
+      $("playerSearchInput").value="";
+    }
+
+    function startLocalTimer(endsAt){
+      clearInterval(timerInterval);
+      timerInterval = setInterval(()=>{
+        const ms=Math.max(0, endsAt-Date.now()); const s=Math.ceil(ms/1000);
+        $("timer").textContent = s+"s";
+        $("timer").className = "timer"+(s<=3?" warn":"");
+        if(ms<=0){ clearInterval(timerInterval);
+          db.ref("asta/status").transaction(v=>{ if(v==="closed") return; return "closed"; })
+            .then(r=>{ if(r.committed){
+              db.ref("asta").once("value").then(snap=>{
+                const a=snap.val(); if(!a) return;
+                db.ref("cronologiaAste").push({ giocatore:a.giocatore, offerta:a.offerta, utente:a.utente, ts: firebase.database.ServerValue.TIMESTAMP });
+                db.ref("soldPlayers/"+a.giocatore).set(true);
+                db.ref("asta").set(null);
+              });
+            }});
+        }
+      },200);
+    }
+
+    db.ref("asta").on("value", snap=>{
+      const a=snap.val();
+      if(!a){ $("currentAuctionSection").style.display="none"; $("currentPlayerName").textContent=""; $("currentBid").textContent="1"; $("lastBidder").textContent="-"; clearInterval(timerInterval); return; }
+      $("currentAuctionSection").style.display="block";
+      $("currentPlayerName").textContent=a.giocatore||"";
+      $("currentBid").textContent=a.offerta||1;
+      $("lastBidder").textContent=a.utente||"-";
+      if(a.endsAt) startLocalTimer(a.endsAt);
+    });
+
+    function placeBid(){
+      const val=parseInt($("bidAmount").value,10);
+      if(!val||val<=0){ $("status").textContent="Inserisci un importo valido"; return; }
+      db.ref("asta").transaction(a=>{
+        if(!a) return a;
+        if(val <= (a.offerta||1)) return a;
+        return Object.assign({}, a, {{ offerta: val, utente: currentUser, endsAt: Date.now()+7000 }});
+      });
+      db.ref("bidsHistory").push({ bid: val, bidder: currentUser, ts: firebase.database.ServerValue.TIMESTAMP });
+      $("bidAmount").value = "";
+    }
+
+    db.ref("bidsHistory").on("child_added", snap=>{
+      const b=snap.val(); const d=document.createElement("div");
+      d.className="bid-item"; const t=new Date(b.ts||Date.now()).toLocaleTimeString();
+      d.innerHTML=`<span>€${{b.bid}} da ${{b.bidder}}</span><small>${{t}}</small>`; $("bidsList").prepend(d);
+    });
+  </script>
+</body>
+</html>
