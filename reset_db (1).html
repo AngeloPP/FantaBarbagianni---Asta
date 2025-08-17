@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reset Asta - FantaBarbagianni</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #1e1e2f;
+      color: #fff;
+      text-align: center;
+      padding: 20px;
+    }
+    h1 { color: #f5c518; }
+    button {
+      margin: 10px;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    .reset-completo { background-color: #e74c3c; color: white; }
+    .reset-parziale { background-color: #f39c12; color: white; }
+    .svuota-partecipanti { background-color: #27ae60; color: white; }
+    #status { margin-top: 20px; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <h1>🔄 Reset Asta</h1>
+  <p>Usa questi pulsanti per azzerare i dati e ripartire pulito.<br>
+  La lista giocatori (<code>/players</code>) non viene toccata.</p>
+
+  <button class="reset-completo" onclick="resetCompleto()">🔴 Reset COMPLETO (nuova asta)</button><br>
+  <button class="reset-parziale" onclick="resetParziale()">🟠 Reset PARZIALE (solo asta corrente)</button><br>
+  <button class="svuota-partecipanti" onclick="svuotaPartecipanti()">🟢 Svuota solo Partecipanti</button>
+
+  <div id="status">⏳ In attesa connessione...</div>
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getDatabase, ref, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDoW-B08tYEdAk-ajr6pebJvs7CejkB-qY",
+      authDomain: "fantabarbagianni---asta.firebaseapp.com",
+      databaseURL: "https://fantabarbagianni---asta-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "fantabarbagianni---asta",
+      storageBucket: "fantabarbagianni---asta.firebasestorage.app",
+      messagingSenderId: "11858821392",
+      appId: "1:11858821392:web:89f9d1aca2d1618808a595",
+      measurementId: "G-1QXXVK09KQ"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    document.getElementById("status").innerText = "✅ Connesso a Firebase";
+
+    function resetCompleto() {
+      if (!confirm("Sei sicuro di voler fare RESET COMPLETO?")) return;
+      Promise.all([
+        remove(ref(db, "asta")),
+        remove(ref(db, "bidsHistory")),
+        remove(ref(db, "cronologiaAste")),
+        remove(ref(db, "lastResult")),
+        remove(ref(db, "soldPlayers")),
+        remove(ref(db, "partecipanti"))
+      ])
+      .then(() => document.getElementById("status").innerText = "✅ Reset COMPLETO eseguito")
+      .catch(err => document.getElementById("status").innerText = "❌ Errore: " + err.message);
+    }
+
+    function resetParziale() {
+      if (!confirm("Vuoi resettare solo l'asta corrente?")) return;
+      Promise.all([
+        remove(ref(db, "asta")),
+        remove(ref(db, "bidsHistory")),
+        remove(ref(db, "lastResult"))
+      ])
+      .then(() => document.getElementById("status").innerText = "✅ Reset PARZIALE eseguito")
+      .catch(err => document.getElementById("status").innerText = "❌ Errore: " + err.message);
+    }
+
+    function svuotaPartecipanti() {
+      if (!confirm("Vuoi svuotare i partecipanti?")) return;
+      remove(ref(db, "partecipanti"))
+      .then(() => document.getElementById("status").innerText = "✅ Partecipanti svuotati")
+      .catch(err => document.getElementById("status").innerText = "❌ Errore: " + err.message);
+    }
+  </script>
+</body>
+</html>
