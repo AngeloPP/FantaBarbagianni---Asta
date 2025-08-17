@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Asta Fantacalcio Pro</title>
+  <style>
+    body {font-family:sans-serif;background:linear-gradient(135deg,#667eea,#764ba2);min-height:100vh;padding:10px;}
+    .container{max-width:600px;margin:0 auto;background:#fff;border-radius:20px;padding:20px;}
+    .header{text-align:center;color:white;background:linear-gradient(135deg,#667eea,#764ba2);padding:20px;border-radius:15px;}
+    .btn-primary{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;padding:12px 20px;border-radius:10px;cursor:pointer;margin:10px;}
+    .btn-bid{background:linear-gradient(135deg,#dc3545,#c82333);color:#fff;border:none;padding:12px 20px;border-radius:10px;cursor:pointer;}
+    .participant{background:#667eea;color:#fff;padding:5px 10px;border-radius:15px;margin:3px;display:inline-block;}
+    .bid-item{background:#eee;margin:5px;padding:8px;border-radius:8px;}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🏆 Asta Fantacalcio</h1>
+      <p>Offerte in tempo reale</p>
+    </div>
+
+    <!-- Login -->
+    <div id="loginSection">
+      <h2>Inserisci il tuo nome</h2>
+      <input type="text" id="playerName" placeholder="Il tuo nome">
+      <button class="btn-primary" onclick="joinAuction()">Entra</button>
+    </div>
+
+    <!-- Asta -->
+    <div id="auctionSection" style="display:none;">
+      <p>👤 Utente: <span id="currentUser"></span></p>
+      <h3>Partecipanti (<span id="participantCount">0</span>/10)</h3>
+      <div id="participantsList"></div>
+
+      <h3>Giocatore</h3>
+      <input type="text" id="playerSearchInput" placeholder="Nome giocatore">
+      <button class="btn-primary" onclick="startAuction()">🚀 Inizia Asta</button>
+
+      <div id="currentAuctionSection" style="display:none;">
+        <h3 id="currentPlayerName"></h3>
+        <p>💰 Offerta: €<span id="currentBid">-</span></p>
+        <p>👤 Ultimo: <span id="lastBidder">-</span></p>
+        <input type="number" id="bidAmount" placeholder="€">
+        <button class="btn-bid" onclick="placeBid()">🔥 Rilancia</button>
+        <button class="btn-primary" onclick="endAuction()">🏁 Chiudi Asta</button>
+      </div>
+
+      <h3>Cronologia</h3>
+      <div id="bidsList"></div>
+    </div>
+  </div>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
+  <script>
+    // 🔹 Config Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyDoW-B08tYEdAk-ajr6pebJvs7CejkB-qY",
+      authDomain: "fantabarbagianni---asta.firebaseapp.com",
+      projectId: "fantabarbagianni---asta",
+      storageBucket: "fantabarbagianni---asta.firebasestorage.app",
+      messagingSenderId: "11858821392",
+      appId: "1:11858821392:web:89f9d1aca2d1618808a595",
+      measurementId: "G-1QXXVK09KQ",
+      databaseURL: "https://fantabarbagianni---asta-default-rtdb.firebaseio.com"
+    };
+
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let currentUser = null;
+
+    function joinAuction() {
+      const name = document.getElementById("playerName").value.trim();
+      if (!name) return alert("Scrivi il tuo nome!");
+      currentUser = name;
+      db.ref("participants/"+name).set(true);
+      document.getElementById("currentUser").innerText = name;
+      document.getElementById("loginSection").style.display="none";
+      document.getElementById("auctionSection").style.display="block";
+    }
+
+    db.ref("participants").on("value", snap=>{
+      const data=snap.val()||{};
+      const list=document.getElementById("participantsList");
+      list.innerHTML="";
+      Object.keys(data).forEach(p=>{
+        const div=document.createElement("div");
+        div.className="participant";
+        div.innerText=p;
+        list.appendChild(div);
+      });
+      document.getElementById("participantCount").innerText=Object.keys(data).length;
+    });
+
+    function startAuction(){
+      const player=document.getElementById("playerSearchInput").value.trim();
+      if(!player) return alert("Inserisci giocatore!");
+      db.ref("currentAuction").set({player:player,bid:1,bidder:"-",ts:Date.now()});
+    }
+
+    db.ref("currentAuction").on("value", snap=>{
+      const auction=snap.val();
+      if(!auction) return;
+      document.getElementById("currentAuctionSection").style.display="block";
+      document.getElementById("currentPlayerName").innerText=auction.player;
+      document.getElementById("currentBid").innerText=auction.bid;
+      document.getElementById("lastBidder").innerText=auction.bidder;
+    });
+
+    function placeBid(){
+      const amount=parseInt(document.getElementById("bidAmount").value);
+      if(!amount) return;
+      db.ref("currentAuction").once("value").then(snap=>{
+        const auction=snap.val(); if(!auction) return;
+        if(amount<=auction.bid) return alert("Offerta troppo bassa!");
+        db.ref("currentAuction").update({bid:amount,bidder:currentUser});
+        db.ref("bidsHistory").push({player:auction.player,bid:amount,bidder:currentUser,ts:Date.now()});
+      });
+    }
+
+    db.ref("bidsHistory").on("child_added", snap=>{
+      const bid=snap.val();
+      const div=document.createElement("div");
+      div.className="bid-item";
+      div.innerText=`€${bid.bid} da ${bid.bidder}`;
+      document.getElementById("bidsList").prepend(div);
+    });
+
+    function endAuction(){
+      db.ref("currentAuction").once("value").then(snap=>{
+        const auction=snap.val(); if(!auction) return;
+        alert(`${auction.player} vinto da ${auction.bidder} per €${auction.bid}`);
+        db.ref("currentAuction").set(null);
+      });
+    }
+  </script>
+</body>
+</html>
