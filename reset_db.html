@@ -1,0 +1,102 @@
+
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <title>Reset Asta - FantaBarbagianni</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial;background:#0f172a;color:#e2e8f0;margin:0;padding:24px}
+    .card{max-width:800px;margin:0 auto;background:#111827;border:1px solid #1f2937;border-radius:14px;padding:24px;box-shadow:0 10px 24px rgba(0,0,0,.35)}
+    h1{margin:0 0 8px}
+    p{margin:6px 0 16px;color:#94a3b8}
+    .btn{padding:12px 16px;border:none;border-radius:10px;font-weight:700;cursor:pointer;margin-right:10px;margin-top:6px}
+    .btn-danger{background:#ef4444;color:#fff}
+    .btn-warn{background:#f59e0b;color:#111}
+    .btn-ok{background:#22c55e;color:#111}
+    .row{margin:14px 0}
+    #log{white-space:pre-wrap;background:#0b1220;border:1px solid #1e293b;border-radius:10px;padding:12px;margin-top:18px;min-height:120px}
+    code{background:#0b1220;padding:2px 6px;border-radius:6px}
+    .muted{color:#94a3b8;font-size:14px}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Reset Asta</h1>
+    <p>Usa questi pulsanti per azzerare i dati e ripartire pulito. <strong>La lista giocatori (<code>/players</code>) non viene toccata</strong>.</p>
+
+    <div class="row">
+      <button class="btn btn-danger" onclick="resetCompleto()">🔴 Reset COMPLETO (consigliato per nuova asta)</button>
+      <div class="muted">Pulisce: <code>/asta</code>, <code>/bidsHistory</code>, <code>/cronologiaAste</code>, <code>/lastResult</code>, <code>/soldPlayers</code>, <code>/partecipanti</code>.</div>
+    </div>
+
+    <div class="row">
+      <button class="btn btn-warn" onclick="resetParziale()">🟠 Reset PARZIALE (solo asta corrente)</button>
+      <div class="muted">Pulisce solo: <code>/asta</code>, <code>/bidsHistory</code>, <code>/lastResult</code>. Lascia intatti <code>/soldPlayers</code> e <code>/cronologiaAste</code>.</div>
+    </div>
+
+    <div class="row">
+      <button class="btn btn-ok" onclick="soloPartecipanti()">🟢 Svuota solo Partecipanti</button>
+    </div>
+
+    <div id="log"></div>
+  </div>
+
+  <script>
+    const log=(...a)=>{document.getElementById('log').textContent += a.join(' ') + "\n"}
+
+    // CONFIG - identica a index.html
+    const firebaseConfig = {
+      apiKey: "AIzaSyDoW-B08tYEdAk-ajr6pebJvs7CejkB-qY",
+      authDomain: "fantabarbagianni---asta.firebaseapp.com",
+      databaseURL: "https://fantabarbagianni---asta-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "fantabarbagianni---asta",
+      storageBucket: "fantabarbagianni---asta.firebasestorage.app",
+      messagingSenderId: "11858821392",
+      appId: "1:11858821392:web:89f9d1aca2d1618808a595",
+      measurementId: "G-1QXXVK09KQ"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    log("✅ Connesso a Firebase");
+
+    function confirmDo(msg){ return window.confirm(msg); }
+
+    async function resetCompleto(){
+      if(!confirmDo("Confermi RESET COMPLETO? Questa operazione cancella asta, offerte, storia, venduti e partecipanti.")) return;
+      try{
+        await db.ref().update({
+          "asta": null,
+          "bidsHistory": null,
+          "cronologiaAste": null,
+          "lastResult": null,
+          "soldPlayers": null,
+          "partecipanti": null
+        });
+        log("🧹 Reset COMPLETO eseguito");
+      }catch(e){ log("❌ Errore:", e.message||e); }
+    }
+
+    async function resetParziale(){
+      if(!confirmDo("Confermi RESET PARZIALE? Cancella solo asta corrente, offerte e lastResult.")) return;
+      try{
+        await db.ref().update({
+          "asta": null,
+          "bidsHistory": null,
+          "lastResult": null
+        });
+        log("🧽 Reset PARZIALE eseguito");
+      }catch(e){ log("❌ Errore:", e.message||e); }
+    }
+
+    async function soloPartecipanti(){
+      if(!confirmDo("Confermi? Svuota solo /partecipanti.")) return;
+      try{
+        await db.ref("partecipanti").set(null);
+        log("👥 Partecipanti svuotati");
+      }catch(e){ log("❌ Errore:", e.message||e); }
+    }
+  </script>
+</body>
+</html>
