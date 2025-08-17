@@ -1,0 +1,115 @@
+
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Asta Fantacalcio Pro (Fix Entra)</title>
+  <style>
+    body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;padding:12px}
+    .container{max-width:700px;margin:0 auto;background:rgba(255,255,255,.96);border-radius:18px;box-shadow:0 20px 40px rgba(0,0,0,.12);overflow:hidden}
+    .header{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;text-align:center;padding:22px}
+    .content{padding:20px}
+    .section{background:linear-gradient(135deg,#f8f9fa,#eef1f5);border-radius:14px;padding:16px;margin:14px 0;border:1px solid rgba(0,0,0,.06)}
+    .row{display:grid;grid-template-columns:1fr auto;gap:12px}
+    .input{width:100%;padding:14px;border:2px solid #e1e8ed;border-radius:12px;font-size:16px;background:#fff}
+    .btn{border:none;border-radius:12px;padding:14px 20px;font-weight:700;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.12);transition:.2s}
+    .btn-primary{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
+    .chips{display:flex;flex-wrap:wrap;gap:8px}
+    .chip{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:6px 10px;border-radius:9999px;font-size:12px}
+    .err{color:#b00020;font-weight:700;margin-top:8px}
+    .small{font-size:12px;color:#6c757d}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🏆 Asta Fantacalcio Pro</h1>
+      <div id="status" class="small"></div>
+    </div>
+    <div class="content">
+      <div class="section" id="loginSection">
+        <h3>🚀 Entra nell'asta</h3>
+        <div class="row" style="grid-template-columns:1fr auto">
+          <input id="playerName" class="input" placeholder="Il tuo nome"/>
+          <button class="btn btn-primary" onclick="joinAuction()">Entra</button>
+        </div>
+        <div id="loginError" class="err"></div>
+      </div>
+
+      <div id="app" style="display:none">
+        <div class="section">
+          <h3>👥 Partecipanti</h3>
+          <div class="chips" id="participantsList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDoW-B08tYEdAk-ajr6pebJvs7CejkB-qY",
+      authDomain: "fantabarbagianni---asta.firebaseapp.com",
+      databaseURL: "https://fantabarbagianni---asta-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "fantabarbagianni---asta",
+      storageBucket: "fantabarbagianni---asta.firebasestorage.app",
+      messagingSenderId: "11858821392",
+      appId: "1:11858821392:web:89f9d1aca2d1618808a595",
+      measurementId: "G-1QXXVK09KQ"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const $=(id)=>document.getElementById(id);
+
+    let currentUser=null;
+
+    // Slug/chiave sicura per Firebase (niente . $ # [ ] / )
+    function toSafeKey(name){
+      return name
+        .normalize('NFKD').replace(/[\u0300-\u036f]/g,'') // rimuovi accenti
+        .replace(/[.#$\[\]/]/g,'-')                        // caratteri non consentiti
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9- ]+/g,'')                         // solo lettere/numeri/spazi/-
+        .replace(/\s+/g,'-')                                 // spazi -> trattini
+        .slice(0,60) || 'utente';
+    }
+
+    function showLoginError(msg){ $("loginError").textContent = msg || ""; }
+
+    function joinAuction(){
+      showLoginError("");
+      const name=$("playerName").value.trim();
+      if(!name){ showLoginError("Inserisci un nome"); return; }
+
+      currentUser=name;
+      const key = toSafeKey(name);
+      // Salva come {safeKey: "Nome Visualizzato"} per permettere nomi con caratteri speciali
+      db.ref("partecipanti/"+key).set(name)
+        .then(()=>{
+          $("loginSection").style.display="none";
+          $("app").style.display="block";
+        })
+        .catch(err=>{
+          console.error(err);
+          showLoginError("Errore: " + (err && err.message ? err.message : err));
+        });
+    }
+
+    // Mostra partecipanti (usa valore se presente, altrimenti la chiave)
+    db.ref("partecipanti").on("value", snap=>{
+      const list=$("participantsList"); list.innerHTML="";
+      const obj = snap.val() || {};
+      Object.keys(obj).forEach(k=>{
+        const vis = obj[k] || k;
+        const chip=document.createElement("div");
+        chip.className="chip"; chip.textContent=vis;
+        list.appendChild(chip);
+      });
+      $("status").textContent = "Partecipanti attivi: " + Object.keys(obj).length;
+    });
+  </script>
+</body>
+</html>
