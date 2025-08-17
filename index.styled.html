@@ -1,0 +1,243 @@
+
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asta Fantacalcio Pro</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh; padding: 10px; position: relative;
+        }
+        .container { max-width: 600px; margin: 0 auto; background: rgba(255,255,255,0.95);
+            border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); backdrop-filter: blur(10px);
+            overflow: hidden; border: 1px solid rgba(255,255,255,0.2); }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px;
+            text-align: center; position: relative; overflow: hidden; }
+        .header::before { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: shimmer 3s ease-in-out infinite; }
+        @keyframes shimmer { 0%, 100% { transform: translateX(-100%); } 50% { transform: translateX(100%); } }
+        .header h1 { margin-bottom: 8px; font-size: 2em; font-weight: 700; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); position: relative; z-index: 1; }
+        .header p { font-size: 1.1em; opacity: 0.9; position: relative; z-index: 1; }
+        .content { padding: 25px; }
+        .login-section { text-align: center; }
+        .login-section h2 { color: #333; margin-bottom: 20px; font-weight: 600; }
+        .login-section input { width: 100%; max-width: 320px; padding: 18px 20px; margin: 15px 0; border: 2px solid #e1e8ed;
+            border-radius: 15px; font-size: 16px; text-align: center; transition: all 0.3s ease; background: rgba(255,255,255,0.9); }
+        .login-section input:focus { outline: none; border-color: #667eea; box-shadow: 0 0 20px rgba(102,126,234,0.3); transform: translateY(-2px); }
+        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 18px 35px; border: none;
+            border-radius: 15px; font-size: 16px; font-weight: 600; cursor: pointer; margin: 15px; transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); }
+        .btn-primary:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(102,126,234,0.6); }
+        .btn-primary:active { transform: translateY(-1px); }
+        .auction-section { display: none; }
+        .user-info { background: linear-gradient(135deg, #f8f9fa, #e9ecef); padding: 20px; border-radius: 15px; margin-bottom: 25px; text-align: center; border: 1px solid rgba(0,0,0,0.1); }
+        .participants { background: linear-gradient(135deg, #e9ecef, #dee2e6); padding: 20px; border-radius: 15px; margin-bottom: 25px; border: 1px solid rgba(0,0,0,0.1); }
+        .participants h3 { margin-bottom: 15px; color: #495057; font-weight: 600; }
+        .participants-list { display: flex; flex-wrap: wrap; gap: 8px; }
+        .participant { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 8px 15px; border-radius: 20px; font-size: 13px; font-weight: 500;
+            box-shadow: 0 2px 8px rgba(102,126,234,0.3); }
+        .player-search { margin-bottom: 25px; }
+        .player-search h3 { color: #333; margin-bottom: 15px; font-weight: 600; }
+        .player-search input { width: 100%; padding: 18px 20px; border: 2px solid #e1e8ed; border-radius: 15px; font-size: 16px; margin-bottom: 15px;
+            transition: all 0.3s ease; background: rgba(255,255,255,0.9); }
+        .player-search input:focus { outline: none; border-color: #667eea; box-shadow: 0 0 20px rgba(102,126,234,0.3); }
+        .current-auction { border: 3px solid #28a745; padding: 25px; border-radius: 20px; margin-bottom: 25px; background: linear-gradient(135deg, #d4edda, #c3e6cb);
+            box-shadow: 0 8px 25px rgba(40,167,69,0.2); position: relative; }
+        .auction-controls { display: grid; grid-template-columns: 1fr auto; gap: 20px; margin-bottom: 25px; }
+        .bid-input { padding: 18px 20px; border: 2px solid #e1e8ed; border-radius: 15px; font-size: 20px; font-weight: bold; text-align: center; transition: all 0.3s ease; }
+        .bid-input:focus { outline: none; border-color: #dc3545; box-shadow: 0 0 20px rgba(220,53,69,0.3); }
+        .btn-bid { background: linear-gradient(135deg, #dc3545, #c82333); color: white; padding: 18px 30px; border: none; border-radius: 15px; font-size: 18px; font-weight: bold;
+            cursor: pointer; transition: all 0.3s ease; min-width: 120px; box-shadow: 0 4px 15px rgba(220,53,69,0.4); }
+        .btn-bid:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(220,53,69,0.6); }
+        .bids-history { background: linear-gradient(135deg, #f8f9fa, #e9ecef); border-radius: 15px; padding: 20px; margin-top: 25px; max-height: 250px; overflow-y: auto;
+            border: 1px solid rgba(0,0,0,0.1); }
+        .bid-item { padding: 12px 18px; margin: 8px 0; background: white; border-radius: 12px; border-left: 4px solid #667eea; display: flex; justify-content: space-between;
+            align-items: center; font-size: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: transform 0.2s ease; }
+        .bid-item:hover { transform: translateY(-1px); }
+        @media (max-width: 600px) {
+            .auction-controls { grid-template-columns: 1fr; }
+            .btn-bid { width: 100%; }
+            .header h1 { font-size: 1.6em; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏆 Asta Fantacalcio Pro</h1>
+            <p>Sistema avanzato di rilanci in tempo reale</p>
+        </div>
+        
+        <div class="content">
+            <!-- Sezione Login -->
+            <div class="login-section" id="loginSection">
+                <h2>🚀 Entra nell'asta</h2>
+                <input type="text" id="playerName" placeholder="Il tuo nome" maxlength="20">
+                <br>
+                <button class="btn-primary" onclick="joinAuction()">Partecipa all'Asta</button>
+                <div id="status" style="margin-top:8px;color:#b00020;font-weight:600;"></div>
+            </div>
+            
+            <!-- Sezione Asta -->
+            <div class="auction-section" id="auctionSection">
+                <div class="user-info">
+                    <strong>🎯 Partecipante: <span id="currentUser"></span></strong>
+                </div>
+                
+                <div class="participants" id="participantsSection">
+                    <h3>👥 Partecipanti attivi:</h3>
+                    <div class="participants-list" id="participantsList"></div>
+                </div>
+                
+                <!-- Selezione Giocatore -->
+                <div class="player-search" id="playerSearchSection">
+                    <h3>🔍 Seleziona Giocatore per Asta</h3>
+                    <input type="text" id="playerSearchInput" placeholder="Cerca o scrivi nome giocatore...">
+                    <button class="btn-primary btn-success" onclick="startAuction()" id="startAuctionBtn">🚀 Inizia Asta</button>
+                </div>
+                
+                <!-- Asta Corrente -->
+                <div class="current-auction" id="currentAuctionSection" style="display: none;">
+                    <h2>⚡ Asta in corso</h2>
+                    <div style="text-align: center; margin: 20px 0;">
+                        <h3 id="currentPlayerName" style="color: #28a745; font-size: 1.4em; margin-bottom: 10px;"></h3>
+                        <p style="font-size: 1.2em;"><strong>💰 Offerta più alta: €<span id="currentBid">1</span></strong></p>
+                        <p style="font-size: 1.1em;"><strong>👤 Ultimo offerente: <span id="lastBidder">-</span></strong></p>
+                    </div>
+                    
+                    <div class="auction-controls">
+                        <input type="number" id="bidAmount" class="bid-input" min="1" placeholder="€">
+                        <button class="btn-bid" onclick="placeBid()" id="bidBtn">🔥 RILANCIA!</button>
+                    </div>
+                    
+                    <button class="btn-primary" style="background:linear-gradient(135deg,#ffc107,#ff8f00);color:#212529" onclick="endAuction()">🏁 Chiudi Asta</button>
+                </div>
+                
+                <!-- Cronologia Offerte -->
+                <div class="bids-history" id="bidsHistory" style="display: none;">
+                    <h3>📊 Cronologia Offerte</h3>
+                    <div id="bidsList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase compat (v8 style) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDoW-B08tYEdAk-ajr6pebJvs7CejkB-qY",
+            authDomain: "fantabarbagianni---asta.firebaseapp.com",
+            databaseURL: "https://fantabarbagianni---asta-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "fantabarbagianni---asta",
+            storageBucket: "fantabarbagianni---asta.firebasestorage.app",
+            messagingSenderId: "11858821392",
+            appId: "1:11858821392:web:89f9d1aca2d1618808a595",
+            measurementId: "G-1QXXVK09KQ"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let currentUser = null;
+
+        function setStatus(msg, isErr=false){
+            const s = document.getElementById('status');
+            s.textContent = msg || '';
+            s.style.color = isErr ? '#b00020' : '#155724';
+        }
+
+        function joinAuction(){
+            const name = document.getElementById('playerName').value.trim();
+            if(!name){ setStatus('Inserisci un nome valido', true); return; }
+            currentUser = name;
+            // Scriviamo sul nodo 'partecipanti' (compat con ciò che hai già nel DB)
+            db.ref('partecipanti/'+name).set(true)
+              .then(()=>{
+                setStatus('');
+                document.getElementById('currentUser').innerText = name;
+                document.getElementById('loginSection').style.display = 'none';
+                document.getElementById('auctionSection').style.display = 'block';
+              })
+              .catch(err=> setStatus('Errore DB: '+err.message, true));
+        }
+
+        // Mostra partecipanti (lega sia 'partecipanti' che 'participants' se presenti)
+        function renderParticipants(dataObj){
+            const list = document.getElementById('participantsList');
+            list.innerHTML = '';
+            Object.keys(dataObj).forEach(p=>{
+                const d = document.createElement('div');
+                d.className = 'participant'; d.innerText = p; list.appendChild(d);
+            });
+        }
+        db.ref('partecipanti').on('value', snap=>{
+            renderParticipants(snap.val() || {});
+        });
+        db.ref('participants').on('value', snap=>{
+            // Unione semplice se usi anche l'altro nodo
+            const existing = document.getElementById('participantsList').children;
+            const already = new Set(Array.from(existing).map(el=>el.innerText));
+            const extra = snap.val() || {};
+            Object.keys(extra).forEach(p=>{
+                if(!already.has(p)){
+                    const d=document.createElement('div'); d.className='participant'; d.innerText=p;
+                    document.getElementById('participantsList').appendChild(d);
+                }
+            });
+        });
+
+        function startAuction(){
+            const player = document.getElementById('playerSearchInput').value.trim();
+            if(!player){ setStatus('Inserisci un giocatore', true); return; }
+            db.ref('asta').set({ giocatore: player, offerta: 1, utente: '-' , ts: Date.now() })
+              .catch(err=> setStatus('Errore avvio asta: '+err.message, true));
+        }
+
+        // Ascolta asta corrente (nodo 'asta' esistente)
+        db.ref('asta').on('value', snap=>{
+            const a = snap.val(); if(!a) return;
+            document.getElementById('currentAuctionSection').style.display = 'block';
+            document.getElementById('bidsHistory').style.display = 'block';
+            document.getElementById('currentPlayerName').innerText = a.giocatore || '';
+            document.getElementById('currentBid').innerText = a.offerta || 1;
+            document.getElementById('lastBidder').innerText = a.utente || '-';
+        });
+
+        function placeBid(){
+            const amount = parseInt(document.getElementById('bidAmount').value);
+            if(!amount){ setStatus('Inserisci un importo', true); return; }
+            db.ref('asta/offerta').once('value').then(snap=>{
+                const cur = snap.val() || 1;
+                if(amount <= cur){ setStatus('Offerta troppo bassa', true); return; }
+                db.ref('asta').update({ offerta: amount, utente: currentUser });
+                // cronologia
+                db.ref('bidsHistory').push({ player: document.getElementById('currentPlayerName').innerText, bid: amount, bidder: currentUser, ts: Date.now() });
+                setStatus('Rilancio registrato');
+            }).catch(err=> setStatus('Errore rilancio: '+err.message, true));
+        }
+
+        // Cronologia live
+        db.ref('bidsHistory').on('child_added', snap=>{
+            const b = snap.val();
+            const div = document.createElement('div');
+            div.className = 'bid-item';
+            div.innerHTML = `<span>€${b.bid} da ${b.bidder}</span> <small>${new Date(b.ts).toLocaleTimeString()}</small>`;
+            document.getElementById('bidsList').prepend(div);
+        });
+
+        function endAuction(){
+            db.ref('asta').once('value').then(snap=>{
+                const a = snap.val(); if(!a) return;
+                alert(`${a.giocatore} vinto da ${a.utente} per €${a.offerta}`);
+                db.ref('asta').set(null);
+            });
+        }
+    </script>
+</body>
+</html>
